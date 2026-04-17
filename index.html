@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Click Master Pro</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  color: white;
+  text-align: center;
+  background: radial-gradient(circle at top, #120024, #000);
+  overflow: hidden;
+}
+
+/* LOADING */
+#loading {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 999;
+}
+
+/* SCREENS */
+.screen {
+  display: none;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.active {
+  display: flex;
+}
+
+/* TEXT */
+h1, h2 {
+  text-shadow: 0 0 20px #a855f7;
+}
+
+/* INPUT */
+input {
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  margin: 10px;
+  font-size: 16px;
+  width: 70%;
+  max-width: 300px;
+}
+
+/* BUTTONS */
+button {
+  padding: 14px 22px;
+  margin: 8px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: white;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  box-shadow: 0 0 15px rgba(124,58,237,0.6);
+  transition: 0.2s;
+  width: 80%;
+  max-width: 300px;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+/* GAME */
+#gameArea {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+/* TARGET */
+#target {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(45deg, #ff004c, #ff7a00);
+  position: absolute;
+  border-radius: 15px;
+  box-shadow: 0 0 25px #ff004c;
+}
+
+/* HUD */
+#hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.4);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+/* PAUSE */
+#pauseMenu {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading">
+  <h1>CLICK MASTER PRO</h1>
+  <p>Chargement...</p>
+</div>
+
+<!-- PAGE 1 -->
+<div id="page1" class="screen active">
+  <h1>CLICK MASTER PRO</h1>
+
+  <input id="nameInput" placeholder="Ton pseudo" />
+
+  <button onclick="goTo(2)">START</button>
+</div>
+
+<!-- PAGE 2 -->
+<div id="page2" class="screen">
+  <h2>CHOIX DU NIVEAU</h2>
+
+  <button onclick="setLevel('easy'); goTo(3)">Facile</button>
+  <button onclick="setLevel('medium'); goTo(3)">Normal</button>
+  <button onclick="setLevel('hard'); goTo(3)">Difficile</button>
+  <button onclick="setLevel('expert'); goTo(3)">Expert</button>
+</div>
+
+<!-- PAGE 3 -->
+<div id="page3" class="screen">
+  <h2>CHOIX DU TEMPS</h2>
+
+  <button onclick="setTime(60); startGame()">1 min</button>
+  <button onclick="setTime(180); startGame()">3 min</button>
+  <button onclick="setTime(300); startGame()">5 min</button>
+  <button onclick="setTime(600); startGame()">10 min</button>
+</div>
+
+<!-- GAME -->
+<div id="page4" class="screen">
+  <div id="hud">
+    <div id="score">Score : 0</div>
+    <div id="time">Temps : 0</div>
+  </div>
+
+  <div id="gameArea">
+    <div id="target"></div>
+
+    <div id="pauseMenu">
+      <h2>PAUSE</h2>
+      <button onclick="resume()">Reprendre</button>
+      <button onclick="restart()">Recommencer</button>
+      <button onclick="goTo(1); reset()">Menu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* LOADING */
+setTimeout(()=>{
+  document.getElementById("loading").style.display="none";
+},1500);
+
+/* PAGES */
+function goTo(p){
+  for(let i=1;i<=4;i++){
+    document.getElementById("page"+i).classList.remove("active");
+  }
+  document.getElementById("page"+p).classList.add("active");
+}
+
+/* GAME DATA */
+let score=0;
+let time=300;
+let maxTime=300;
+let level="easy";
+let speed=1000;
+let running=false;
+let interval;
+
+/* TARGET */
+const t=document.getElementById("target");
+
+/* SETTINGS */
+function setLevel(l){level=l;}
+function setTime(ti){maxTime=ti;}
+
+/* START */
+function startGame(){
+  goTo(4);
+
+  score=0;
+  time=maxTime;
+
+  if(level==="easy")speed=1200;
+  if(level==="medium")speed=900;
+  if(level==="hard")speed=600;
+  if(level==="expert")speed=350;
+
+  running=true;
+
+  interval=setInterval(()=>{
+    if(!running)return;
+    time--;
+    if(time<=0)end();
+    hud();
+  },1000);
+
+  loop();
+}
+
+/* HUD */
+function hud(){
+  document.getElementById("score").innerText="Score : "+score;
+
+  let m=Math.floor(time/60),s=time%60;
+  document.getElementById("time").innerText=
+  "Temps : "+m+":"+(s<10?"0"+s:s);
+}
+
+/* MOVE */
+function move(){
+  let x=Math.random()*(window.innerWidth-80);
+  let y=Math.random()*(window.innerHeight-80);
+  t.style.left=x+"px";
+  t.style.top=y+"px";
+}
+
+function loop(){
+  if(!running)return;
+  move();
+  setTimeout(loop,speed);
+}
+
+/* CLICK */
+t.onclick=()=>{
+  if(!running)return;
+  score++;
+  hud();
+};
+
+/* END */
+function end(){
+  running=false;
+  clearInterval(interval);
+  alert("FIN ! Score : "+score);
+  goTo(1);
+}
+
+/* RESET */
+function reset(){
+  running=false;
+  clearInterval(interval);
+}
+
+/* PAUSE (ESC) */
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="Escape"&&running){
+    running=false;
+    document.getElementById("pauseMenu").style.display="flex";
+  }
+});
+
+function resume(){
+  running=true;
+  document.getElementById("pauseMenu").style.display="none";
+  loop();
+}
+
+function restart(){
+  location.reload();
+}
+</script>
+
+</body>
+</html>
